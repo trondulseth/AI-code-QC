@@ -1,0 +1,145 @@
+Gjennomfør en grundig produksjonsberedskaps- og sikkerhetsgjennomgang av hele dette verktøyet før det tas i bruk.
+
+Dette er i første omgang en revisjon, ikke en omskriving. Ikke endre kode, konfigurasjon, infrastruktur eller data med mindre jeg senere ber om det. Du kan kjøre sikre, lokale og ikke-destruktive kontroller og tester. Ikke send data til eksterne tjenester, og ikke utfør tester mot produksjon.
+
+Start med å forstå systemet:
+
+- Kartlegg arkitektur, teknologistakk, kjøringsmiljø, databaser, integrasjoner og viktigste dataflyter.
+- Finn ut hvordan løsningen autentiserer brukere, autoriserer handlinger og skiller data mellom brukere, team eller organisasjoner.
+- Identifiser antakelser som koden gjør om miljø, trafikk, data, brukere og eksterne tjenester.
+- Les dokumentasjon, konfigurasjon, migrasjoner, tester, CI/CD-oppsett og relevante historiske endringer dersom de er tilgjengelige.
+- Hvis viktig kontekst mangler, oppgi hva du antar. Still bare spørsmål når svaret kan endre risikovurderingen vesentlig.
+
+Undersøk minst følgende områder:
+
+1. Funksjonell kvalitet
+   - Feil i forretningslogikk, kanttilfeller og ugyldige tilstander.
+   - Mangelfull validering, feilbehandling eller håndtering av delvise operasjoner.
+   - Om grensesnitt og API-er faktisk oppfører seg i tråd med dokumentert hensikt.
+   - Risiko for tap, korrupsjon, duplisering eller feil eksponering av data.
+
+2. Sikkerhet
+   - Autentisering, autorisasjon og tilgangskontroll på serversiden.
+   - Mulighet for at én bruker kan lese eller endre en annen brukers data.
+   - Injeksjoner, XSS, CSRF, SSRF, usikker filhåndtering, path traversal, open redirects og command execution.
+   - Feil bruk av CORS, cookies, sesjoner, tokens og OAuth.
+   - Hemmeligheter, API-nøkler og personopplysninger i kode, logger, klientkode, byggartefakter eller versjonshistorikk.
+   - Manglende rate limiting, misbruksvern og kontroll av ressursforbruk.
+   - Avhengigheter med kjente sårbarheter, unødvendige rettigheter eller mistenkelig opprinnelse.
+   - Om eksterne tjenester og AI-funksjoner kan lekke data eller misbrukes gjennom prompt injection, dersom dette er relevant.
+   - Bruk OWASP-prinsipper som kontrollgrunnlag, men rapporter konkrete problemer i denne løsningen fremfor en generell sjekkliste.
+
+3. Samtidige brukere og dataintegritet
+   - Race conditions, lost updates, doble innsendinger og manglende idempotens.
+   - Transaksjonsgrenser, låsing, unike constraints og konsistens mellom flere operasjoner.
+   - Delt muterbar tilstand, globale variabler, cacher og forbindelser som ikke er trygge ved flere prosesser eller instanser.
+   - Køer, bakgrunnsjobber, retries og risiko for at samme jobb kjøres flere ganger.
+   - Timeout, connection pooling, minnebruk og oppførsel under høy eller plutselig last.
+   - Hva som skjer dersom en prosess, database eller ekstern tjeneste feiler midt i en operasjon.
+   - Test eksplisitt minst én realistisk situasjon med parallelle forespørsler dersom det kan gjøres trygt lokalt.
+
+4. Robusthet og drift
+   - Timeout, retry med backoff, circuit breaking og håndtering av ustabile integrasjoner.
+   - Oppstart, nedstenging, restarter og flere samtidige instanser.
+   - Logging, metrics, tracing og mulighet for å oppdage og diagnostisere feil.
+   - Helsekontroller, alarmer, backup, gjenoppretting og rollback.
+   - Databaseendringer, bakoverkompatibilitet og trygg utrulling uten nedetid.
+   - Konfigurasjonsfeil, miljøforskjeller og sikre standardverdier.
+   - Om feil svar eller logger eksponerer interne detaljer.
+
+5. Personvern og organisatorisk risiko
+   - Hvilke personopplysninger eller konfidensielle data som samles inn, lagres, logges eller deles.
+   - Dataminimering, lagringstid, sletting, eksport og sporbarhet.
+   - Kryptering under transport og lagring.
+   - Tilgang for administratorer og tjenestekontoer.
+   - Lisensrisiko og bruk av tredjepartskode eller tjenester.
+   - Marker spørsmål som må avklares av personvern-, sikkerhets- eller juridisk ansvarlig; ikke gi bastante juridiske konklusjoner.
+
+6. Kodekvalitet og vedlikehold
+   - Unødvendig kompleksitet, kopiert kode, uklare ansvarsgrenser og skjulte koblinger.
+   - Svake typer, risikabel dynamisk oppførsel og feilutsatte abstraksjoner.
+   - Død kode, midlertidige løsninger, generert kode eller kommentarer som ikke stemmer.
+   - Testkvalitet, manglende kritiske tester og tester som gir falsk trygghet.
+   - Om en ny utvikler realistisk kan forstå, drifte og videreutvikle løsningen.
+
+7. Leveransekjede og utrulling
+   - Låsing og verifisering av avhengigheter.
+   - Bygge- og deployskript, CI/CD-rettigheter og behandling av hemmeligheter.
+   - Container- eller skyoppsett, eksponerte porter og unødvendige privilegier.
+   - Separasjon mellom utvikling, test og produksjon.
+   - Mulighet for reproducerbare bygg og trygg rollback.
+
+Arbeidsmetode:
+
+- Følg data og kontrollflyt gjennom den faktiske koden. Ikke vurder bare filnavn eller overfladiske mønstre.
+- Kjør relevante eksisterende tester, statiske kontroller og avhengighetskontroller når dette kan gjøres lokalt og trygt.
+- Lag noen få målrettede tester eller minimale reproduksjoner dersom det trengs for å bekrefte en mistanke, men ikke gjør større produksjonsendringer.
+- Ikke rapporter hypotetiske problemer uten å undersøke om de faktisk kan oppstå.
+- For hvert funn: oppgi konkret fil og linje, berørt flyt, utløsende scenario, konsekvens og anbefalt retting.
+- Skill tydelig mellom bekreftede funn, sannsynlige risikoer og ubesvarte spørsmål.
+- Ikke bruk manglende tester som bevis på at en funksjon er feil; forklar hvilken risiko testgapet skaper.
+- Prioriter reelle produksjonsrisikoer fremfor stilpreferanser.
+- Masker alle hemmeligheter og sensitive verdier. Ikke gjengi dem i rapporten.
+- Dersom automatiske verktøy rapporterer noe, verifiser relevansen manuelt før det tas med som et funn.
+
+Ranger funn slik:
+
+- Kritisk: kan medføre alvorlig kompromittering, omfattende datatap eller gjør utrulling uforsvarlig.
+- Høy: sannsynlig eller betydelig sikkerhets-, integritets- eller stabilitetsrisiko.
+- Middels: reell svakhet som bør utbedres, men som vanligvis ikke alene blokkerer en kontrollert pilot.
+- Lav: begrenset risiko eller forbedring av vedlikeholdbarhet og drift.
+
+Lever rapporten i denne strukturen:
+
+1. Kort konklusjon
+   - Hva verktøyet gjør og hvordan det er bygget.
+   - Samlet risikonivå.
+   - Én tydelig anbefaling: «ikke lanser», «kun begrenset pilot» eller «klar for kontrollert utrulling».
+
+2. Lanseringsblokkere
+   - En kort nummerert liste over forhold som må løses før bruk.
+   - Skriv uttrykkelig «Ingen identifisert» dersom listen er tom.
+
+3. Detaljerte funn
+   - Sortert etter alvorlighetsgrad.
+   - For hvert funn:
+     - Tittel og alvorlighetsgrad.
+     - Bevis med fil- og linjereferanser.
+     - Hvordan problemet kan utløses.
+     - Faktisk eller sannsynlig konsekvens.
+     - Konkret anbefaling.
+     - Hvordan rettingen bør verifiseres.
+     - Sikkerhet i vurderingen: høy, middels eller lav.
+
+4. Kapasitets- og samtidighetsvurdering
+   - Forventede flaskehalser og feilmodi.
+   - Hva som er testet, med belastning og resultat.
+   - Hva som ennå ikke kan konkluderes uten et realistisk testmiljø.
+   - Forslag til belastnings-, utholdenhets- og feilsimuleringstester før lansering.
+
+5. Test- og observability-gap
+   - Manglende tester, logger, metrics, alarmer og driftsprosedyrer.
+   - Prioritert etter risiko.
+
+6. Positivt observerte egenskaper
+   - Kort liste over mekanismer som faktisk reduserer risiko. Ta bare med forhold du har verifisert.
+
+7. Prioritert tiltaksplan
+   - Før pilot.
+   - Før bred utrulling.
+   - Forbedringer etter lansering.
+   - Gi et grovt estimat på innsats og risikoreduksjon, men ikke gi kunstig presise tidsestimater.
+
+8. Ubesvarte spørsmål og begrensninger
+   - Tilganger, miljøer eller informasjon du manglet.
+   - Hvilke konklusjoner dette begrenser.
+   - Eventuelle kontroller som må utføres av mennesker eller i et separat testmiljø.
+
+9. Utførte kontroller
+   - Kommandoer og tester som ble kjørt.
+   - Resultatene, inkludert feil og kontroller som ikke lot seg gjennomføre.
+   - Ikke påstå at noe er testet dersom det bare er inspisert.
+
+Avslutt med en kort «go/no-go»-sjekkliste som en ansvarlig leder kan bruke til å avgjøre om verktøyet kan piloteres eller lanseres.
+
+Vær direkte, presis og evidensbasert. Ikke mildne alvorlige funn, men unngå alarmisme og falsk sikkerhet. Fravær av identifiserte funn skal ikke omtales som bevis på at løsningen er sikker.
